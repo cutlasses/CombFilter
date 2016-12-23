@@ -13,6 +13,24 @@ const int                DRY_SIGNAL_CHANNEL( 0 );
 const int                FEED_FORWARD_CHANNEL( 1 );
 const int                FEED_BACKWARD_CHANNEL( 2 );
 
+const int                RESONANT_FREQ_PIN( 20 );
+const int                RESONANCE_TIME_PIN( 17 );
+
+const float              FREQUENCIES[] =   {  65.41,            // C2
+                                              69.30,            // C#2
+                                              73.42,            // D2
+                                              77.78,            // D#2
+                                              82.41,            // E2
+                                              87.31,            // F2
+                                              92.50,            // F#2
+                                              98.00,            // G2
+                                              103.83,           // G#2
+                                              110.00,           // A2
+                                              116.54,           // A#2/Bb2
+                                              123.47,           // B2
+                                            };
+
+
 AudioInputI2S            audio_input;
 AudioOutputI2S           audio_output;
 AudioControlSGTL5000     sgtl5000_1;
@@ -27,6 +45,7 @@ AudioConnection          patch_cord_3( audio_input, 0, feed_forward_delay, 0 );
 AudioConnection          patch_cord_4( feed_forward_delay, 0, delay_mixer, FEED_FORWARD_CHANNEL );
 AudioConnection          patch_cord_5( delay_mixer, 0, feed_back_delay, 0 );
 AudioConnection          patch_cord_6( feed_back_delay, 0, delay_mixer, FEED_BACKWARD_CHANNEL );
+
 
 float calculate_delay_time_ms( float resonant_frequency )
 {
@@ -54,18 +73,15 @@ void setup()
 
   Serial.print("Setup started!\n");
 
-  const float resonant_frequency  = 261.3f; // C4
-  const float resonance_time      = 1000.0f;   // time taken for resonance to drop 60dB
-
-  const float delay_time_ms       = calculate_delay_time_ms( resonant_frequency );
-  const float feedback_mult       = calculate_feedback_multiplier( delay_time_ms, resonance_time );
+  const float delay_time_ms       = calculate_delay_time_ms( FREQUENCIES[0] );
+  const float feedback_mult       = calculate_feedback_multiplier( delay_time_ms, 1000.0f );
 
   feed_forward_delay.delay( 0, delay_time_ms );
   feed_back_delay.delay( 0, delay_time_ms );
 
-  delay_mixer.gain( DRY_SIGNAL_CHANNEL, 1.0f );
-  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult );
-  delay_mixer.gain( FEED_FORWARD_CHANNEL, feedback_mult );
+  delay_mixer.gain( DRY_SIGNAL_CHANNEL, 0.5f );
+  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.5f );
+  delay_mixer.gain( FEED_FORWARD_CHANNEL, feedback_mult * 0.0f );
 
 /*
   delay_mixer.gain( DRY_SIGNAL_CHANNEL, 0.33f );
@@ -82,4 +98,25 @@ void setup()
 
 void loop()
 {
+  static int current_freq_index = 0;
+
+  const int next_freq_index = analogRead( RESONANT_FREQ_PIN ) / ( 1024.0f / 12.0f );
+
+  if( current_freq_index != next_freq_index )
+  {
+    Serial.print("Freq index:");
+    Serial.println( next_freq_index );
+
+    current_freq_index = next_freq_index;
+
+    const float delay_time_ms       = calculate_delay_time_ms( FREQUENCIES[current_freq_index] );
+  
+    feed_forward_delay.delay( 0, delay_time_ms );
+    feed_back_delay.delay( 0, delay_time_ms );
+
+    Serial.print("Delay time ms:");
+    Serial.println(delay_time_ms);
+  }
+
+  delay( 5 );
 }
