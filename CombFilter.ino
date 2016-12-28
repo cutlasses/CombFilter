@@ -18,6 +18,7 @@ const int                FEED_BACKWARD_CHANNEL( 2 );
 const int                RESONANT_FREQ_PIN( 20 );
 const int                RESONANCE_TIME_PIN( 17 );
 
+/*
 const float              FREQUENCIES[] =   {  65.41,            // C2
                                               69.30,            // C#2
                                               73.42,            // D2
@@ -31,11 +32,24 @@ const float              FREQUENCIES[] =   {  65.41,            // C2
                                               116.54,           // A#2/Bb2
                                               123.47,           // B2
                                             };
-
+*/
+const float              FREQUENCIES[] =   {  261.63,            // C2
+                                              277.18,            // C#2
+                                              293.66,            // D2
+                                              311.13,            // D#2
+                                              329.63,            // E2
+                                              349.23,            // F2
+                                              369.99,            // F#2
+                                              392.00,            // G2
+                                              415.30,           // G#2
+                                              440.00,           // A2
+                                              466.16,           // A#2/Bb2
+                                              493.88,           // B2
+                                            };
 
 #ifdef TEST_TONE
 
-AudioSynthToneSweep      test_tone;
+AudioSynthWaveformSine   test_tone;
 AudioOutputI2S           audio_output;
 AudioControlSGTL5000     sgtl5000_1;
 
@@ -93,6 +107,8 @@ void setup()
   Serial.begin(9600);
   delay( 1000 );
 
+  test_tone.amplitude( 0.5f );
+
   Serial.print("Setup started!\n");
 
   const float delay_time_ms       = calculate_delay_time_ms( FREQUENCIES[0] );
@@ -102,7 +118,7 @@ void setup()
   feed_back_delay.delay( 0, delay_time_ms );
 
   delay_mixer.gain( DRY_SIGNAL_CHANNEL, 0.5f );
-  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.0f );
+  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.5f );
   delay_mixer.gain( FEED_FORWARD_CHANNEL, feedback_mult * 0.0f );
 
 /*
@@ -121,10 +137,19 @@ void setup()
 void loop()
 {
 #ifdef TEST_TONE
-  if( !test_tone.isPlaying() )
-  {
-    test_tone.play( 0.5f, 100.0f, 1000.0f, 10 );
-  }
+
+    static int current_tone_index = 0;
+
+    test_tone.frequency( FREQUENCIES[current_tone_index] );
+
+    Serial.print("Tone index:");
+    Serial.print( current_tone_index );
+    Serial.print(" Freq:");
+    Serial.println( FREQUENCIES[current_tone_index] );
+    
+    delay( 2000 );
+    current_tone_index = ( current_tone_index + 1 ) % 12;
+
 #endif
   
   static int current_freq_index = 0;
