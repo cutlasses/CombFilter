@@ -4,6 +4,8 @@
 #include <SD.h>
 #include <SerialFlash.h>
 
+#define TEST_TONE
+
 // Use these with the audio adaptor board
 #define SDCARD_CS_PIN    10
 #define SDCARD_MOSI_PIN  7
@@ -31,6 +33,25 @@ const float              FREQUENCIES[] =   {  65.41,            // C2
                                             };
 
 
+#ifdef TEST_TONE
+
+AudioSynthToneSweep      test_tone;
+AudioOutputI2S           audio_output;
+AudioControlSGTL5000     sgtl5000_1;
+
+AudioMixer4              delay_mixer;
+AudioEffectDelay         feed_forward_delay;
+AudioEffectDelay         feed_back_delay;
+
+AudioConnection          patch_cord_1( test_tone, 0, delay_mixer, DRY_SIGNAL_CHANNEL );
+AudioConnection          patch_cord_2( delay_mixer, 0, audio_output, 0 );
+AudioConnection          patch_cord_3( test_tone, 0, feed_forward_delay, 0 );
+AudioConnection          patch_cord_4( feed_forward_delay, 0, delay_mixer, FEED_FORWARD_CHANNEL );
+AudioConnection          patch_cord_5( delay_mixer, 0, feed_back_delay, 0 );
+AudioConnection          patch_cord_6( feed_back_delay, 0, delay_mixer, FEED_BACKWARD_CHANNEL );
+
+#else // !TEST_TONE
+
 AudioInputI2S            audio_input;
 AudioOutputI2S           audio_output;
 AudioControlSGTL5000     sgtl5000_1;
@@ -46,6 +67,7 @@ AudioConnection          patch_cord_4( feed_forward_delay, 0, delay_mixer, FEED_
 AudioConnection          patch_cord_5( delay_mixer, 0, feed_back_delay, 0 );
 AudioConnection          patch_cord_6( feed_back_delay, 0, delay_mixer, FEED_BACKWARD_CHANNEL );
 
+#endif // !TEST_TONE
 
 float calculate_delay_time_ms( float resonant_frequency )
 {
@@ -80,7 +102,7 @@ void setup()
   feed_back_delay.delay( 0, delay_time_ms );
 
   delay_mixer.gain( DRY_SIGNAL_CHANNEL, 0.5f );
-  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.5f );
+  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.0f );
   delay_mixer.gain( FEED_FORWARD_CHANNEL, feedback_mult * 0.0f );
 
 /*
@@ -98,6 +120,13 @@ void setup()
 
 void loop()
 {
+#ifdef TEST_TONE
+  if( !test_tone.isPlaying() )
+  {
+    test_tone.play( 0.5f, 100.0f, 1000.0f, 10 );
+  }
+#endif
+  
   static int current_freq_index = 0;
 
   const int next_freq_index = analogRead( RESONANT_FREQ_PIN ) / ( 1024.0f / 12.0f );
