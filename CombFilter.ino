@@ -29,22 +29,22 @@ const float              FREQUENCIES[] =   {  65.41,            // C2
                                               98.00,            // G2
                                               103.83,           // G#2
                                               110.00,           // A2
-                                              116.54,           // A#2/Bb2
+                                              116.54,           // A#2
                                               123.47,           // B2
                                             };
 */
-const float              FREQUENCIES[] =   {  261.63,            // C2
-                                              277.18,            // C#2
-                                              293.66,            // D2
-                                              311.13,            // D#2
-                                              329.63,            // E2
-                                              349.23,            // F2
-                                              369.99,            // F#2
-                                              392.00,            // G2
-                                              415.30,           // G#2
-                                              440.00,           // A2
-                                              466.16,           // A#2/Bb2
-                                              493.88,           // B2
+const float              FREQUENCIES[] =   {  261.63,            // C4
+                                              277.18,            // C#4
+                                              293.66,            // D4
+                                              311.13,            // D#4
+                                              329.63,            // E4
+                                              349.23,            // F4
+                                              369.99,            // F#4
+                                              392.00,            // G4
+                                              415.30,           // G#4
+                                              440.00,           // A4
+                                              466.16,           // A#4
+                                              493.88,           // B4
                                             };
 
 #ifdef TEST_TONE
@@ -106,26 +106,22 @@ void setup()
 
   Serial.begin(9600);
   delay( 1000 );
-
-  test_tone.amplitude( 0.5f );
+  
+ #ifdef TEST_TONE
+  test_tone.amplitude( 0.25f );
+#endif
 
   Serial.print("Setup started!\n");
 
-  const float delay_time_ms       = calculate_delay_time_ms( FREQUENCIES[0] );
+  const float delay_time_ms       = calculate_delay_time_ms( FREQUENCIES[2] ); // tuned to D2
   const float feedback_mult       = calculate_feedback_multiplier( delay_time_ms, 1000.0f );
 
   feed_forward_delay.delay( 0, delay_time_ms );
   feed_back_delay.delay( 0, delay_time_ms );
 
   delay_mixer.gain( DRY_SIGNAL_CHANNEL, 0.5f );
-  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.5f );
-  delay_mixer.gain( FEED_FORWARD_CHANNEL, feedback_mult * 0.0f );
-
-/*
-  delay_mixer.gain( DRY_SIGNAL_CHANNEL, 0.33f );
-  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.33f );
-  delay_mixer.gain( FEED_FORWARD_CHANNEL, feedback_mult * 0.33f );
-*/
+  delay_mixer.gain( FEED_BACKWARD_CHANNEL, feedback_mult * 0.0f );
+  delay_mixer.gain( FEED_FORWARD_CHANNEL, feedback_mult * 0.5f );
 
   Serial.print("Delay time ms:");
   Serial.print(delay_time_ms);
@@ -151,26 +147,4 @@ void loop()
     current_tone_index = ( current_tone_index + 1 ) % 12;
 
 #endif
-  
-  static int current_freq_index = 0;
-
-  const int next_freq_index = analogRead( RESONANT_FREQ_PIN ) / ( 1024.0f / 12.0f );
-
-  if( current_freq_index != next_freq_index )
-  {
-    Serial.print("Freq index:");
-    Serial.println( next_freq_index );
-
-    current_freq_index = next_freq_index;
-
-    const float delay_time_ms       = calculate_delay_time_ms( FREQUENCIES[current_freq_index] );
-  
-    feed_forward_delay.delay( 0, delay_time_ms );
-    feed_back_delay.delay( 0, delay_time_ms );
-
-    Serial.print("Delay time ms:");
-    Serial.println(delay_time_ms);
-  }
-
-  delay( 5 );
 }
